@@ -15,6 +15,7 @@ float maxPartDist = 128;
 const char* platformName = "Nintendo DS(i)";
 
 void fileStart();
+
 void systemStart()  {
     cpuStartTiming(0);
     fileStart();
@@ -22,18 +23,19 @@ void systemStart()  {
 }
 
 void fileStart() {
-    /* Start up fs */
-	if (fatInitDefault()) {
-        print_message("fatInit success!\n");
+    /* Start NitroFS instead of FAT */
+    if (nitroFSInit(NULL)) {
+        print_message("nitroFS init success!\n");
         startEngine = 1;
-	} else {
-		print_message("fatInit failure\nEnsure you're emulator or cart\nproperly supports libfat;\nelse do the correct DLDI patches\n\n");
+    } else {
+        print_message("nitroFS init failure\n");
         startEngine = 0;
-	}
+    }
 }
 
 touchPosition	thisXY;
 touchPosition	lastXY = { 0,0,0,0 };
+
 float multiSpeed = 8;
 float lh = 0;
 float lv = 0;
@@ -41,26 +43,28 @@ float lv = 0;
 void processInput() {
     scanKeys();
     int held = keysHeld();
+
     lh = lerp(lh, 0, deltaTime*25);
     lv = lerp(lv, 0, deltaTime*25);
 
-	if (held & KEY_TOUCH)   {
+    if (held & KEY_TOUCH) {
         touchRead(&thisXY);
 
         s16 dx = thisXY.px - lastXY.px;
         s16 dy = thisXY.py - lastXY.py;
 
-		if (dx<20 && dx>-20 && dy<20 && dy>-20) {
-			if(dx>-3&&dx<3)
-				dx=0;
-			if(dy>-2&&dy<2) dy=0;
+        if (dx<20 && dx>-20 && dy<20 && dy>-20) {
+            if(dx>-3&&dx<3)
+                dx=0;
+            if(dy>-2&&dy<2)
+                dy=0;
 
             lh = dx*60;
             lv = dy*60;
         }
 
-		lastXY = thisXY;
-	}
+        lastXY = thisXY;
+    }
 
     look_horizontal_axis = lerp(look_horizontal_axis, lh, deltaTime*2);
     look_vertical_axis = lerp(look_vertical_axis, lv, deltaTime*2);
@@ -69,11 +73,6 @@ void processInput() {
     int button_down = (held & KEY_DOWN);
     int button_left = (held & KEY_LEFT);
     int button_right = (held & KEY_RIGHT);
-
-    int button_a = (held & KEY_A);
-    int button_b = (held & KEY_B);
-    int button_x = (held & KEY_X);
-    int button_y = (held & KEY_Y);
 
     int button_l = (held & KEY_L);
     int button_r = (held & KEY_R);
@@ -93,5 +92,6 @@ void processInput() {
 
     camera_ry += (look_horizontal_axis*deltaTime);
     camera_rx -= (look_vertical_axis*deltaTime);
+
     camera_rx = clamp(camera_rx, -90, 90);
 }
